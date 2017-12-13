@@ -1,23 +1,39 @@
 ---
-namespace: "ansible-service-broker"
-service_account_name: "asb"
-client_service_account_name: "asb-client"
-auth_cluster_role_name: "asb-auth"
-access_cluster_role_name: "asb-access"
+openshift_common_config_base_dir: /tmp
+
+namespace: ansible-service-broker
+
 deploy_broker_template_url: https://raw.githubusercontent.com/openshift/ansible-service-broker/master/templates/deploy-ansible-service-broker.template.yaml
 deploy_broker_template_file: /tmp/deploy-ansible-service-broker.template.yaml
 
+broker_image_name: docker.io/ansibleplaybookbundle/origin-ansible-service-broker
+broker_tag: latest
+broker_image: "{{ broker_image_name }}:{{ broker_tag }}"
 
-ansible_service_broker_image_prefix: ansibleplaybookbundle/
-ansible_service_broker_image_tag: latest
+etcd_image_name: quay.io/coreos/etcd
+etcd_tag: latest
+etcd_image: "{{ etcd_image_name }}:{{ etcd_tag }}"
+etcd_path: /usr/local/bin/etcd
 
-ansible_service_broker_etcd_image_prefix: quay.io/coreos/
-ansible_service_broker_etcd_image_tag: latest
+registry_type: dockerhub
+registry_name: dh
+registry_url: docker.io
+dockerhub_org: ansibleplaybookbundle
+dockerhub_pass: ""
+dockerhub_user: ""
+apb_tag: latest
+image_pull_policy: IfNotPresent
 
-ansible_service_broker_registry_type: dockerhub
-ansible_service_broker_registry_url: null
-ansible_service_broker_registry_organization: ansibleplaybookbundle
+dev_broker: True
+launch_apb_on_bind: False
+output_request: False
+recovery: True
+bootstrap_refresh_interval: "600s"
+sandbox_role: edit
+auto_escalate: False
+keep_namespace: False
+keep_namespace_on_error: True
+enable_basic_auth: False
 
-ansible_service_broker_enable_basic_auth: false
 
-openshift_common_config_base_dir: /tmp
+
