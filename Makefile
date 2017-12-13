@@ -1,5 +1,5 @@
 DOCKERHOST = docker.io
-DOCKERORG = asb-installer
+DOCKERORG = ansibleplaybookbundle
 IMAGENAME = asb-installer
 TAG = latest
 USER=$(shell id -u)

@@ -1,0 +1,23 @@
+---
+namespace: "ansible-service-broker"
+service_account_name: "asb"
+client_service_account_name: "asb-client"
+auth_cluster_role_name: "asb-auth"
+access_cluster_role_name: "asb-access"
+deploy_broker_template_url: https://raw.githubusercontent.com/openshift/ansible-service-broker/master/templates/deploy-ansible-service-broker.template.yaml
+deploy_broker_template_file: /tmp/deploy-ansible-service-broker.template.yaml
+
+
+ansible_service_broker_image_prefix: ansibleplaybookbundle/
+ansible_service_broker_image_tag: latest
+
+ansible_service_broker_etcd_image_prefix: quay.io/coreos/
+ansible_service_broker_etcd_image_tag: latest
+
+ansible_service_broker_registry_type: dockerhub
+ansible_service_broker_registry_url: null
+ansible_service_broker_registry_organization: ansibleplaybookbundle
+
+ansible_service_broker_enable_basic_auth: false
+
+openshift_common_config_base_dir: /tmp
