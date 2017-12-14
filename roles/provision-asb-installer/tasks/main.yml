@@ -1,76 +1,66 @@
-##############################################################################
-## Provision asb-installer
-## This role executes much of the needed functionality to provision an
-## application using an Ansible Playbook Bundle.  Included in the comments
-## below are some sample resources for getting started deploying an application
-## to OpenShift.
-##############################################################################
+---
+- include_tasks: generate_certs.yml
 
+- name: Create broker namespace
+  openshift_v1_project:
+    name: '{{ namespace }}'
 
-##############################################################################
-## An OpenShift Origin deployment configuration provides a replication
-## controller, spins up pods, and also provides the ability to transition from
-## one deployment of an image to a new one.
-## https://docs.openshift.org/latest/architecture/core_concepts/deployments.html#deployments-and-deployment-configurations
-##############################################################################
-#- name: create deployment config
-#  openshift_v1_deployment_config:
-#    name: asb-installer
-#    namespace: '{{ namespace }}'
-#    labels:
-#      app: asb-installer
-#      service: asb-installer
-#    replicas: 1
-#    selector:
-#      app: asb-installer
-#      service: asb-installer
-#    spec_template_metadata_labels:
-#      app: asb-installer
-#      service: asb-installer
-#    containers:
-#    - env:
-#      image: docker.io/ansibleplaybookbundle/hello-world:latest # replace with your application image
-#      name: asb-installer
-#      ports:
-#      - container_port: 8080
-#        protocol: TCP
+- name: Switch to broker namespace
+  shell: "oc project {{ namespace }}"
 
+- name: get service-catalog-apiserver-token secret name
+  shell: "oc get secret --no-headers=true -n kube-service-catalog | grep -m 1 service-catalog-apiserver-token | awk '{ print $1 }' | cat"
+  register: cat_token_secret_name
 
-##############################################################################
-## A Kubernetes service serves as an internal load balancer.  It identifies a
-## set of replicated pods in order to proxy the connections it receives to them.
-## https://docs.openshift.org/latest/architecture/core_concepts/pods_and_services.html#services
-##############################################################################
-#- name: create asb-installer service
-#  k8s_v1_service:
-#    name: asb-installer
-#    namespace: '{{ namespace }}'
-#    labels:
-#      app: asb-installer
-#      service: asb-installer
-#    selector:
-#      app: asb-installer
-#      service: asb-installer
-#    ports:
-#      - name: web
-#        port: 80
-#        target_port: 8080
+- name: retrieve cert for cluster
+  shell: "oc get secret {{ cat_token_secret_name.stdout }} -n kube-service-catalog -o yaml | grep service-ca.crt | awk '{ print $2 }' | cat"
+  register: cluster_ca_cert_cat
 
+- set_fact:
+    cluster_ca_cert: "{{ cluster_ca_cert_cat.stdout }}"
 
-##############################################################################
-## An OpenShift Origin route exposes a service at a host name, so that external
-## clients can reach it by name. Each route consists of a name, a service
-## selector, and an optional security configuration.
-## https://docs.openshift.org/latest/architecture/core_concepts/routes.html
-##############################################################################
-#- name: create asb-installer route
-#  openshift_v1_route:
-#    name: asb-installer
-#    namespace: '{{ namespace }}'
-#    labels:
-#      app: asb-installer
-#      service: asb-installer
-#    to_name: asb-installer
-#    spec_port_target_port: web
+- name: Curling deploy template from {{ deploy_broker_template_url }}
+  get_url:
+    url: "{{ deploy_broker_template_url }}"
+    force: yes
+    dest: "{{ deploy_broker_template_file }}"
 
+- name: Create command line for processing template
+  set_fact:
+    cmd_process_deploy_template: >
+      oc process
+      -n {{ namespace }}
+      -p NAMESPACE={{ namespace }}
+      -p BROKER_IMAGE={{ broker_image }}
+      -p ETCD_IMAGE={{ etcd_image }}
+      -p ETCD_PATH={{ etcd_path }}
+      -p REGISTRY_TYPE={{ registry_type }}
+      -p REGISTRY_URL={{ registry_url }}
+      -p DEV_BROKER={{ dev_broker }}
+      -p DOCKERHUB_ORG="{{dockerhub_org}}"
+      -p DOCKERHUB_PASS="{{ dockerhub_pass }}"
+      -p DOCKERHUB_USER="{{ dockerhub_user }}"
+      -p LAUNCH_APB_ON_BIND={{ launch_apb_on_bind }}
+      -p OUTPUT_REQUEST={{ output_request }}
+      -p RECOVERY={{ recovery }}
+      -p REGISTRY_NAME={{ registry_name }}
+      -p REFRESH_INTERVAL={{ bootstrap_refresh_interval }}
+      -p TAG={{ apb_tag }}
+      -p SANDBOX_ROLE={{ sandbox_role }}
+      -p IMAGE_PULL_POLICY={{ image_pull_policy }}
+      -p AUTO_ESCALATE={{ auto_escalate|bool }}
+      -p KEEP_NAMESPACE={{ keep_namespace|bool }}
+      -p KEEP_NAMESPACE_ON_ERROR={{ keep_namespace_on_error|bool }}
+      -p ENABLE_BASIC_AUTH="{{ enable_basic_auth }}"
+      -p ETCD_TRUSTED_CA_FILE=/var/run/etcd-auth-secret/ca.crt
+      -p BROKER_CLIENT_CERT_PATH=/var/run/asb-etcd-auth/client.crt
+      -p BROKER_CLIENT_KEY_PATH=/var/run/asb-etcd-auth/client.key
+      -p ETCD_TRUSTED_CA="{{ etcd_ca_cert }}"
+      -p BROKER_CLIENT_CERT="{{ etcd_client_cert }}"
+      -p BROKER_CLIENT_KEY="{{ etcd_client_key }}"
+      -p BROKER_CA_CERT={{ cluster_ca_cert }}
+      -f {{ deploy_broker_template_file }} | oc create -f -
+
+- name: Run template to deploy broker
+  shell: "{{ cmd_process_deploy_template }}"
 
