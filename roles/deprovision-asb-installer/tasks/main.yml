@@ -4,3 +4,21 @@
   openshift_v1_project:
     name: '{{ namespace }}'
     state: absent
+
+- name: Delete asb ClusterRoleBinding
+  shell: "oc delete clusterrolebinding asb"
+
+- name: Delete asb-auth-bind ClusterRoleBinding
+  shell: "oc delete clusterrolebinding asb-auth-bind"
+
+- name: Delete ansibleservicebroker-client ClusterRoleBinding
+  shell: "oc delete clusterrolebinding ansibleservicebroker-client"
+
+- name: Delete access-asb-role ClusterRole
+  shell: "oc delete clusterrole access-asb-role"
+
+- name: Delete asb-auth ClusterRole
+  shell: "oc delete clusterrole asb-auth"
+
+- name: Delete ansible-service-broker ClusterServiceBroker
+  shell: "oc delete clusterservicebroker ansible-service-broker"
