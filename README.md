@@ -18,11 +18,11 @@ Before installing, you must be logged in with `cluster-admin` privileges
 oc login -u system:admin
 ```
 
-You can docker run the ASB.  Assuming the installer was built with the default tag of `asb-installer`, the basic installation of ASB looks like:
+You can docker run the ASB installer.  Assuming the installer was built with the default tag of `asb-installer`, the basic installation of ASB looks like:
 ```bash
 docker run --rm --net=host -v $HOME/.kube:/opt/apb/.kube:z -u $UID asb-installer provision
 ```
-
+Use the full image tag such as `docker.io/ansibleplaybookbundle/asb-installer:latest` if you want to pull and use a built image from a registry instead of the locally built image `asb-installer`
 
 You can pass in more variables to the command as you would when running an Ansible playbook, such as:
  
